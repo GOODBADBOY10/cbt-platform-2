@@ -1,0 +1,128 @@
+import NextAuth from "next-auth";
+import Credentials from "next-auth/providers/credentials";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
+import { checkLoginRateLimit } from "@/lib/ratelimit";
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
+  providers: [
+    Credentials({
+      credentials: {
+        identifier: {},
+        password: {},
+      },
+      authorize: async (credentials) => {
+        const identifier = credentials.identifier as string;
+        const password = credentials.password as string;
+
+        if (!identifier || !password) return null;
+
+        const { success } = await checkLoginRateLimit(identifier);
+        if (!success) {
+          throw new Error("Too many login attempts. Please wait a minute and try again.");
+        }
+
+        const [user] = await db
+          .select()
+          .from(users)
+          .where(eq(users.email, identifier))
+          .limit(1);
+
+        const foundUser =
+          user ||
+          (
+            await db
+              .select()
+              .from(users)
+              .where(eq(users.regNumber, identifier))
+              .limit(1)
+          )[0];
+
+        if (!foundUser) return null;
+
+        // Account already locked from previous failed attempts - block immediately,
+        // even if they somehow now type the correct password.
+        if (foundUser.isLocked) {
+          throw new Error("ACCOUNT_LOCKED");
+        }
+
+        const passwordValid = await bcrypt.compare(password, foundUser.passwordHash);
+
+        if (!passwordValid) {
+          const newFailedCount = foundUser.failedLoginAttempts + 1;
+          const shouldLock = newFailedCount >= 3;
+
+          await db
+            .update(users)
+            .set({
+              failedLoginAttempts: newFailedCount,
+              isLocked: shouldLock,
+            })
+            .where(eq(users.id, foundUser.id));
+
+          if (shouldLock) {
+            throw new Error("ACCOUNT_LOCKED");
+          }
+
+          return null;
+        }
+
+        // Correct password - reset the failed-attempt counter
+        if (foundUser.failedLoginAttempts > 0) {
+          await db
+            .update(users)
+            .set({ failedLoginAttempts: 0 })
+            .where(eq(users.id, foundUser.id));
+        }
+
+        return {
+          id: foundUser.id,
+          email: foundUser.email,
+          name: foundUser.fullName,
+          role: foundUser.role,
+          mustChangePassword: foundUser.mustChangePassword,
+        };
+      },
+    }),
+  ],
+  session: { strategy: "jwt" },
+  callbacks: {
+    jwt: async ({ token, user, trigger }) => {
+      if (user) {
+        token.role = user.role;
+        token.id = user.id;
+        token.mustChangePassword = user.mustChangePassword;
+      }
+
+      // When the client calls update() (e.g. after changing password),
+      // re-fetch the latest value from the database instead of trusting
+      // the stale value already baked into the token.
+      if (trigger === "update" && token.id) {
+        const [freshUser] = await db
+          .select({ mustChangePassword: users.mustChangePassword })
+          .from(users)
+          .where(eq(users.id, token.id as string));
+
+        if (freshUser) {
+          token.mustChangePassword = freshUser.mustChangePassword;
+        }
+      }
+
+      return token;
+    },
+    session: async ({ session, token }) => {
+      if (session.user) {
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
+        session.user.mustChangePassword = token.mustChangePassword as boolean;
+      }
+      return session;
+    },
+  },
+  pages: {
+    signIn: "/login",
+  },
+});
