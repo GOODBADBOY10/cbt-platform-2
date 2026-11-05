@@ -3,21 +3,10 @@
 import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { SCHOOL } from "@/lib/school";
 import { Eye, EyeOff } from "lucide-react";
 import { HeroSlideshow } from "@/app/components/HeroSlideshow";
 
-const loginImages = [
-  "/images/slider-1.jpg",
-  "/images/gallery-8.jpg",
-  "/images/gallery-9.jpg",
-  "/images/gallery-10.jpg",
-  "/images/gallery-12.jpg",
-  "/images/gallery-13.jpg",
-  "/images/gallery-14.jpg",
-  "/images/gallery-15.jpg",
-  "/images/gallery-16.jpg",
-  "/images/gallery-17.jpg",
-];
 
 function LoginForm() {
   const [identifier, setIdentifier] = useState("");
@@ -68,7 +57,7 @@ function LoginForm() {
     <div className="relative z-10 w-full max-w-md px-4 py-20">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-white drop-shadow-sm tracking-tight">
-          Atakunmosa CBT Platform
+          {SCHOOL.name}
         </h1>
         <p className="text-white/80 mt-2 text-sm">
           Computer-based testing for students, teachers &amp; administrators
@@ -148,7 +137,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <HeroSlideshow images={loginImages} interval={4000}>
+    <HeroSlideshow images={SCHOOL.heroImages} interval={4000}>
       <div className="min-h-screen flex items-center justify-center">
         <Suspense fallback={<div className="relative z-10 text-white">Loading...</div>}>
           <LoginForm />

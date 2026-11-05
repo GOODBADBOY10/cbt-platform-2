@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { SCHOOL } from "@/lib/school";
 
 export const metadata: Metadata = {
-  title: "CBT Platform",
-  description: "A simple CBT platform built with Next.js 16, TypeScript, and Tailwind CSS.",
+  title: `${SCHOOL.name} CBT Portal`,
+  description: `Official website and computer-based testing portal of ${SCHOOL.name}.`,
 };
 
 export default function RootLayout({
