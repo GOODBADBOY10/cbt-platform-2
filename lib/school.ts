@@ -9,21 +9,8 @@ export const SCHOOL = {
   logo: "/images/logo.jpg",
 
   // Used for the home page hero and the login background. These files must exist in /public/images
-  heroImages: [
-    "/images/slider-1.jpg",
-    "/images/gallery-8.jpg",
-    "/images/gallery-9.jpg",
-    "/images/gallery-10.jpg",
-    "/images/gallery-12.jpg",
-    "/images/gallery-13.jpg",
-    "/images/gallery-14.jpg",
-    "/images/gallery-15.jpg",
-    "/images/gallery-16.jpg",
-    "/images/gallery-17.jpg",
-  ],
-
-  // Gallery shows gallery-1.jpg ... gallery-N.jpg. Set N to how many photos they sent.
-  galleryCount: 17,
+  heroImages: [1, 5, 8, 12, 15, 18, 22, 26, 30, 33].map((n) => `/images/gallery-${n}.jpg`),
+  galleryCount: 33,
 
   director: {
     name: "Deaconess E.F. Olamiju",

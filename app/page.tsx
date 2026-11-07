@@ -37,6 +37,7 @@ export default async function HomePage() {
       <HeroSlideshow images={SCHOOL.heroImages} interval={3000}>
         <div className="max-w-5xl mx-auto px-6 py-24 text-center">
           <img
+          loading="lazy"
             src={SCHOOL.logo}
             alt={`${SCHOOL.name} logo`}
             className="w-24 h-24 mx-auto mb-6 rounded-full object-cover bg-white/10 border-2 border-white/40"
